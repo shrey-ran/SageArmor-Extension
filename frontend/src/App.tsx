@@ -15,9 +15,18 @@ def get_user(user_id):
 `);
 
   const [language, setLanguage] = useState('python');
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const [scanResults, setScanResults] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  const handleCopyFix = (v: any, idx: number) => {
+    const text = v.remediation?.patch ?? v.suggested_fix ?? '';
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    });
+  };
 
   const handleScan = async () => {
     setIsScanning(true);
@@ -320,15 +329,31 @@ def get_user(user_id):
                           </div>
                         )}
 
-                        {/* Suggested Fix */}
-                        <div className="space-y-4">
+                        {/* Suggested Fix — with Copy Button */}
+                        <div className="space-y-3">
                           <h3 className="text-on-surface font-headline font-bold flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary">auto_fix_high</span>
                             Suggested Fix
                           </h3>
-                          <div className="rounded-xl overflow-x-auto border border-primary/20 bg-surface-container-lowest font-mono text-sm leading-relaxed p-4">
-                            <pre className="text-primary whitespace-pre-wrap">{v.suggested_fix}</pre>
+                          <div className="relative rounded-xl border border-primary/20 bg-surface-container-lowest font-mono text-sm leading-relaxed">
+                            <button
+                              onClick={() => handleCopyFix(v, idx)}
+                              title="Copy fix"
+                              className="absolute top-3 right-3 flex items-center gap-1 text-xs font-label px-2 py-1 rounded-md bg-surface-container-high border border-outline-variant/20 hover:border-primary/40 transition-all"
+                            >
+                              {copiedIdx === idx ? (
+                                <><span className="material-symbols-outlined text-sm text-primary" style={{fontSize:'14px'}}>check_circle</span><span className="text-primary">Copied!</span></>
+                              ) : (
+                                <><span className="material-symbols-outlined text-sm text-on-surface-variant" style={{fontSize:'14px'}}>content_copy</span><span className="text-on-surface-variant">Copy</span></>
+                              )}
+                            </button>
+                            <div className="overflow-x-auto p-4 pr-20">
+                              <pre className="text-primary whitespace-pre-wrap">{v.remediation?.patch ?? v.suggested_fix}</pre>
+                            </div>
                           </div>
+                          {v.remediation?.explanation && (
+                            <p className="text-xs text-on-surface-variant italic pl-1">{v.remediation.explanation}</p>
+                          )}
                         </div>
                       </div>
                     ))

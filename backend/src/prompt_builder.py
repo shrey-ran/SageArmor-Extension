@@ -50,7 +50,9 @@ Each object within 'vulnerabilities' must map exactly to:
 - 'issue' (string: short descriptive title)
 - 'explanation' (string: why it is a risk referencing the guidelines schema)
 - 'poc_exploit_scenario' (string: a clear, step-by-step description showing exactly how an attacker triggers this exploit. If you cannot construct this, discard the finding entirely.)
-- 'suggested_fix' (string: the actual inline code replacement or configuration to remediate it)
+- 'remediation' (object) with exactly two sub-fields:
+    - 'patch' (string: the minimal drop-in code block or config that directly fixes the vulnerability — must be copy-pasteable)
+    - 'explanation' (string: one sentence explaining why this specific patch eliminates the risk)
 
 Content to review:
 ```

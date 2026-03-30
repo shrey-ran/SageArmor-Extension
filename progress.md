@@ -35,9 +35,9 @@
 ---
 
 ## 🔧 Phase 6: Auto-Remediation
-- [ ] Generate fix suggestions
-- [ ] Create patch system
-- [ ] Validate fixes
+- [x] Generate fix suggestions (Structured remediation.patch schema)
+- [x] Create patch system (Copy-fix button with clipboard API)
+- [x] Validate fixes (Remediation explanation field enforced)
 
 ---
 
