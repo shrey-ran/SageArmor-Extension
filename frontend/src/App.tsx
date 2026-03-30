@@ -307,6 +307,19 @@ def get_user(user_id):
                           </div>
                         </div>
 
+                        {/* Simulated Attack Scenario */}
+                        {v.poc_exploit_scenario && (
+                          <div className="space-y-3">
+                            <h3 className="text-on-surface font-headline font-bold flex items-center gap-2">
+                              <span className="material-symbols-outlined text-error">bug_report</span>
+                              Simulated Attack Scenario
+                            </h3>
+                            <div className="rounded-xl overflow-x-auto border border-error/30 bg-error/5 font-mono text-sm leading-relaxed p-4">
+                              <pre className="text-error/90 whitespace-pre-wrap">{v.poc_exploit_scenario}</pre>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Suggested Fix */}
                         <div className="space-y-4">
                           <h3 className="text-on-surface font-headline font-bold flex items-center gap-2">

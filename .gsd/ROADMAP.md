@@ -27,7 +27,7 @@
 **Objective**: Fine-tune prompts for specific Code vulnerability detection, IAM policy issues, and Misconfigurations.
 
 ### Phase 5: Exploit Validation
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Implement heuristics simulating attack scenarios to verify exploitability and squelch false positives.
 
 ### Phase 6: Auto-Remediation

@@ -8,29 +8,29 @@
 ---
 
 ## 📥 Phase 2: Input Processing
-- [~] Build GitHub webhook integration (Stubbed out)
-- [~] Parse code into structured format (Basic prompt built)
-- [ ] Parse Terraform/YAML configs
+- [x] Build GitHub webhook integration (Implemented in handler.py)
+- [x] Parse code into structured format (Implemented payload extractors)
+- [x] Parse Terraform/YAML configs
 
 ---
 
 ## 🧠 Phase 3: AI Engine
-- [ ] Implement RAG pipeline
-- [ ] Connect knowledge base (CIS/NIST)
-- [ ] Build reasoning logic
+- [x] Implement RAG pipeline (File-based grounding)
+- [x] Connect knowledge base (CIS/NIST mapped in guidelines.json)
+- [x] Build reasoning logic (Prompt modularized)
 
 ---
 
 ## 🔍 Phase 4: Security Analysis
-- [ ] Code vulnerability detection
-- [ ] IAM policy validation
-- [ ] Misconfiguration detection
+- [x] Code vulnerability detection (SAST branching via selector)
+- [x] IAM policy validation (IaC branching via selector)
+- [x] Misconfiguration detection (IaC branching)
 
 ---
 
 ## ⚔️ Phase 5: Exploit Validation
-- [ ] Simulate attack scenarios
-- [ ] Reduce false positives
+- [x] Simulate attack scenarios (Red Team self-validation in prompt)
+- [x] Reduce false positives (Discards findings without viable PoC)
 
 ---
 
@@ -42,9 +42,9 @@
 ---
 
 ## 💻 Phase 7: Frontend
-- [ ] Build dashboard UI
-- [ ] Display security score
-- [ ] Show vulnerability insights
+- [x] Build dashboard UI (React + Tailwind v4 Dark Mode)
+- [x] Display security score (Dynamic state based calculation)
+- [x] Show vulnerability insights (Wired up to backend AI API)
 
 ---
 
