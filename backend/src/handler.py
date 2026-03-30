@@ -47,6 +47,9 @@ def review_code(event, context):
             body_str = '{}'
         body = json.loads(body_str) if isinstance(body_str, str) else body_str
         
+        # Determine language context from dashboard toggle or fallback 
+        language = body.get('language', 'python')
+        
         # 1. Check if it's a GitHub Webhook event
         if 'pull_request' in body:
             action = body.get('action')
@@ -63,6 +66,15 @@ def review_code(event, context):
                 raise Exception(f"Failed to fetch PR diff: {resp.status_code}")
                 
             code_snippet = resp.text
+            
+            # Very basic heuristic for webhook PR diff language detection
+            if '.tf' in code_snippet:
+                language = 'terraform'
+            elif '.yml' in code_snippet or '.yaml' in code_snippet:
+                language = 'yaml'
+            elif '.js' in code_snippet or '.ts' in code_snippet:
+                language = 'javascript'
+                
         else:
             # 2. Direct code snippet testing (from Frontend Dashboard)
             code_snippet = body.get('code', '')
@@ -71,7 +83,7 @@ def review_code(event, context):
             return {"statusCode": 400, "headers": {"Access-Control-Allow-Origin": "*"}, "body": json.dumps({"error": "No code snippet provided."})}
 
         # Call Claude 3.5 Sonnet via Bedrock using modularized prompt builder
-        prompt = build_security_prompt(code_snippet)
+        prompt = build_security_prompt(code_snippet, language)
 
         # Claude 3 Sonnet Payload
         request_body = json.dumps({

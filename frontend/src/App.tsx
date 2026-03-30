@@ -14,6 +14,8 @@ def get_user(user_id):
     return cursor.fetchall()
 `);
 
+  const [language, setLanguage] = useState('python');
+
   const [scanResults, setScanResults] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
 
@@ -25,7 +27,7 @@ def get_user(user_id):
       const response = await fetch(`${apiUrl}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: codeSnippet })
+        body: JSON.stringify({ code: codeSnippet, language })
       });
       const data = await response.json();
       setScanResults(data);
@@ -241,7 +243,20 @@ def get_user(user_id):
               
               {/* Code Input Area */}
               <div className="bg-surface-container rounded-xl border border-outline-variant/15 p-6">
-                <h2 className="text-xl font-headline font-bold text-on-surface mb-4">Snippet Scanner</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-headline font-bold text-on-surface">Snippet Scanner</h2>
+                  <select 
+                    value={language} 
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="bg-surface-container-high text-on-surface text-sm font-label uppercase tracking-wider rounded-lg px-3 py-1.5 border border-outline-variant/15 outline-none focus:border-primary/50 transition-colors"
+                  >
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript / Node</option>
+                    <option value="go">Go</option>
+                    <option value="terraform">Terraform (.tf)</option>
+                    <option value="yaml">YAML (K8s / CI)</option>
+                  </select>
+                </div>
                 <textarea 
                   value={codeSnippet}
                   onChange={(e) => setCodeSnippet(e.target.value)}

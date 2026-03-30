@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-secondary-fixed: #c0d1ff;
+  --color-error-dim: #d7383b;
+  --color-primary-fixed: #00fc40;
+  --color-outline-variant: #46484d;
+  --color-on-background: #f6f6fc;
+  --color-primary: #9cff93;
+  --color-on-surface-variant: #aaabb0;
+  --color-on-tertiary: #440900;
+  --color-error-container: #9f0519;
+  --color-surface-container: #171a1f;
+  --color-surface-bright: #292c33;
+  --color-on-surface: #f6f6fc;
+  --color-secondary-dim: #0f6df3;
+  --color-secondary-fixed-dim: #acc3ff;
+  --color-error: #ff716c;
+  --color-secondary-container: #0058ca;
+  --color-on-primary-container: #005a10;
+  --color-surface-variant: #23262c;
+  --color-primary-dim: #00ec3b;
+  --color-outline: #74757a;
+  --color-inverse-surface: #f9f9ff;
+  --color-primary-fixed-dim: #00ec3b;
+  --color-on-secondary: #001d4e;
+  --color-on-error: #490006;
+  --color-tertiary-dim: #dc3300;
+  --color-on-secondary-container: #f7f7ff;
+  --color-on-secondary-fixed-variant: #004baf;
+  --color-surface-container-lowest: #000000;
+  --color-surface-container-high: #1d2025;
+  --color-on-error-container: #ffa8a3;
+  --color-background: #0c0e12;
+  --color-surface-tint: #9cff93;
+  --color-tertiary-fixed-dim: #ff7d5c;
+  --color-tertiary-container: #fc3c00;
+  --color-on-primary: #006413;
+  --color-inverse-on-surface: #53555a;
+  --color-inverse-primary: #006f16;
+  --color-surface-container-highest: #23262c;
+  --color-on-secondary-fixed: #003076;
+  --color-tertiary-fixed: #ff9479;
+  --color-surface: #0c0e12;
+  --color-primary-container: #00fc40;
+  --color-surface-dim: #0c0e12;
+  --color-on-primary-fixed: #00440a;
+  --color-on-tertiary-container: #000000;
+  --color-on-tertiary-fixed: #360600;
+  --color-on-primary-fixed-variant: #006513;
+  --color-secondary: #6e9bff;
+  --color-on-tertiary-fixed-variant: #721600;
+  --color-tertiary: #ff7350;
+  --color-surface-container-low: #111318;
+
+  --font-headline: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-label: "Space Grotesk", system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-on-background);
+    font-family: var(--font-body);
+  }
+}

@@ -1,7 +1,7 @@
 import json
 import os
 
-def build_security_prompt(code_snippet: str) -> str:
+def build_security_prompt(code_snippet: str, language: str = 'python') -> str:
     """
     Parses the CIS/NIST guidelines and constructs a strict JSON AI prompt.
     """
@@ -14,6 +14,18 @@ def build_security_prompt(code_snippet: str) -> str:
     except FileNotFoundError:
         guidelines_doc = "{}"
 
+    instructions = ""
+    if language.lower() in ['terraform', 'yaml', 'json']:
+        instructions = """1. You are running in Infrastructure-as-Code (IaC) mode.
+2. Vigorously hunt for Cloud misconfigurations like public S3 buckets, missing server-side encryption, and unencrypted DBs.
+3. Inspect IAM scopes. Look for wildcard actions (`"*"`) or overly broad principals and flag violations of the Principle of Least Privilege.
+4. Ensure strict network restrictiveness. Prevent Security Group rules that open sensitive ports to `"0.0.0.0/0"`."""
+    else:
+        instructions = """1. You are running in Static Application Security Testing (SAST) mode.
+2. Look for SQL/NoSQL Injection vectors—ensure all dynamic Database queries use prepared statements/parameter binding.
+3. Vigorously hunt for hardcoded credentials, API keys, or leaked authentication tokens in the raw text.
+4. Check for Cross-Site Scripting (XSS), lack of input sanitization, and unsafe shell executions (`subprocess` without `shell=False`)."""
+
     prompt = f"""You are SageArmor AI, an elite autonomous Digital Security Engineer. 
 Your primary task is to review the following code snippet or Pull Request diff for security vulnerabilities, misconfigurations, or bad practices.
 
@@ -24,10 +36,9 @@ Base your recommendations strictly on these principles to reduce false positives
 {guidelines_doc}
 ```
 
-## Instructions for Analysis
-1. If you encounter Infrastructure-as-Code (Terraform `.tf` or YAML structures), mandate strict adherence to IAM Least Privilege, Secure Storage Defaults, and restrictiveness.
-2. If evaluating application code, vigorously hunt for hardcoded credentials or injection vectors.
-3. If the code is completely safe according to these standards, return an empty 'vulnerabilities' array. DO NOT invent false vulnerabilities just to fill the payload!
+## Instructions for Analysis ({language.upper()} Mode)
+{instructions}
+5. If the code is completely safe according to these standards, return an empty 'vulnerabilities' array. DO NOT invent false vulnerabilities just to fill the payload!
 
 ## Required Output Format
 You MUST return your findings as a valid JSON object. Provide ONLY pure JSON, unquoted by markdown backticks.
