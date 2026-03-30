@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import requests
 from dotenv import load_dotenv
+from prompt_builder import build_security_prompt
 
 load_dotenv()
 
@@ -69,19 +70,8 @@ def review_code(event, context):
         if not code_snippet:
             return {"statusCode": 400, "headers": {"Access-Control-Allow-Origin": "*"}, "body": json.dumps({"error": "No code snippet provided."})}
 
-        # Call Claude 3.5 Sonnet via Bedrock
-        prompt = f"""You are an elite Digital Security Engineer. 
-Review the following code or pull request diff for security vulnerabilities, misconfigurations, or bad practices.
-If you see Terraform (.tf) or YAML configurations, evaluate them for Infrastructure-as-Code and IAM security best practices.
-Return your findings as a JSON object with a single root key 'vulnerabilities' which is an array of objects.
-Each object must have 'severity' (High, Medium, Low), 'issue' (short description), 'explanation' (why it is a risk), and 'suggested_fix' (the code to fix it).
-
-Content to review:
-```
-{code_snippet}
-```
-Return ONLY valid JSON.
-"""
+        # Call Claude 3.5 Sonnet via Bedrock using modularized prompt builder
+        prompt = build_security_prompt(code_snippet)
 
         # Claude 3 Sonnet Payload
         request_body = json.dumps({
