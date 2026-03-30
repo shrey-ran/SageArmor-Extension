@@ -1,0 +1,96 @@
+# ============================================================
+#  SageArmor AI — .gitignore
+# ============================================================
+
+# ──────────────────────────────────────────────────────────
+# OS & Editor Artifacts
+# ──────────────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# ──────────────────────────────────────────────────────────
+# Environment & Secrets (CRITICAL — never commit these)
+# ──────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+# Keep .env.example files (they are safe templates)
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# ──────────────────────────────────────────────────────────
+# Python Backend
+# ──────────────────────────────────────────────────────────
+venv/
+backend/venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ──────────────────────────────────────────────────────────
+# Node.js / NPM (Frontend + Backend serverless plugins)
+# ──────────────────────────────────────────────────────────
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# ──────────────────────────────────────────────────────────
+# Vite / React Frontend Build Output
+# ──────────────────────────────────────────────────────────
+frontend/dist/
+frontend/.vite/
+frontend/build/
+
+# ──────────────────────────────────────────────────────────
+# Serverless Framework
+# ──────────────────────────────────────────────────────────
+.serverless/
+backend/.serverless/
+backend/.tmp-home/
+
+# ──────────────────────────────────────────────────────────
+# Logs
+# ──────────────────────────────────────────────────────────
+*.log
+logs/
+backend/.tmp-home/
+
+# ──────────────────────────────────────────────────────────
+# AWS / Deployment Artifacts
+# ──────────────────────────────────────────────────────────
+.aws/
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# ──────────────────────────────────────────────────────────
+# Coverage & Test Reports
+# ──────────────────────────────────────────────────────────
+coverage/
+.coverage
+htmlcov/
+*.lcov
