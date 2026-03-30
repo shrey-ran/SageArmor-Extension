@@ -14,7 +14,17 @@ This file provides Gemini-specific integration. For the complete methodology, se
 
 ---
 
-## Core Principles
+## 🔐 Security Rules (MANDATORY — Never Override)
+
+> These rules are NON-NEGOTIABLE and apply in every session.
+
+1. **NEVER read `.env` files** — Do not use `view_file`, `grep`, or any tool to read `backend/.env`, `frontend/.env`, or any file matching `*.env` or `.env.*`. These contain live credentials.
+2. **NEVER log or print secrets** — Do not echo, repeat, or embed any value that looks like an API key, token, password, or secret in any response or file.
+3. **NEVER commit secrets** — The `.gitignore` already excludes `.env` files. Never add them back.
+4. **NEVER read these paths**: `backend/.env`, `frontend/.env`, `**/.env`, `**/.env.local`, `**/.env.*.local`.
+
+---
+
 
 1. **Plan Before You Build** — No code without specification
 2. **State Is Sacred** — Every action updates persistent memory
