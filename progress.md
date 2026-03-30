@@ -49,8 +49,8 @@
 ---
 
 ## 🔗 Phase 8: Integration
-- [ ] PR comment automation
-- [ ] GitHub/GitLab integration
+- [x] PR comment automation (Auto-posts to GitHub via REST API)
+- [x] GitHub/GitLab integration (GitHub webhook + PR review API)
 
 ---
 

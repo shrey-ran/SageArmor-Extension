@@ -283,8 +283,12 @@ def get_user(user_id):
                     </div>
                     <div>
                       <h2 className="text-xl font-headline font-bold text-on-surface">Analysis Results</h2>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="text-on-surface-variant text-[10px] uppercase font-label tracking-tighter">Live Scan Mode</span>
+                        <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-2 py-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block"></span>
+                          <span className="text-primary text-[9px] font-label uppercase tracking-wider whitespace-nowrap">GitHub PR Auto-Review: Active</span>
+                        </div>
                       </div>
                     </div>
                   </div>

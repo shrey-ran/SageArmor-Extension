@@ -6,6 +6,7 @@ import hashlib
 import requests
 from dotenv import load_dotenv
 from prompt_builder import build_security_prompt
+from github_commenter import post_pr_review
 
 load_dotenv()
 
@@ -49,6 +50,7 @@ def review_code(event, context):
         
         # Determine language context from dashboard toggle or fallback 
         language = body.get('language', 'python')
+        is_webhook = 'pull_request' in body
         
         # 1. Check if it's a GitHub Webhook event
         if 'pull_request' in body:
@@ -74,10 +76,16 @@ def review_code(event, context):
                 language = 'yaml'
             elif '.js' in code_snippet or '.ts' in code_snippet:
                 language = 'javascript'
+
+            # Store PR metadata for auto-commenting after analysis
+            repo_full_name = body.get('repository', {}).get('full_name', '')
+            pr_number = body['pull_request'].get('number')
                 
         else:
             # 2. Direct code snippet testing (from Frontend Dashboard)
             code_snippet = body.get('code', '')
+            repo_full_name = None
+            pr_number = None
             
         if not code_snippet:
             return {"statusCode": 400, "headers": {"Access-Control-Allow-Origin": "*"}, "body": json.dumps({"error": "No code snippet provided."})}
@@ -117,6 +125,18 @@ def review_code(event, context):
                 analysis_result = json.loads(clean_text)
             except:
                 analysis_result = {"error": "Failed to parse AI response as JSON", "raw": content}
+
+        # Fire-and-forget: post findings back to GitHub PR (webhook path only)
+        if is_webhook and repo_full_name and pr_number:
+            try:
+                post_pr_review(
+                    repo_full_name,
+                    pr_number,
+                    analysis_result.get('vulnerabilities', [])
+                )
+            except Exception as comment_err:
+                # Never block the response if commenting fails
+                print(f"[handler] PR comment failed (non-fatal): {str(comment_err)}")
 
         return {
             "statusCode": 200,
