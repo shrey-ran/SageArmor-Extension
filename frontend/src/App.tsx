@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import './App.css';
-import { log } from 'console';
 
 function App() {
   const [codeSnippet, setCodeSnippet] = useState(`import os
@@ -29,9 +28,12 @@ def get_user(user_id):
     });
   };
 
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const handleScan = async () => {
     setIsScanning(true);
     setScanResults(null);
+    setApiError(null);
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
       const response = await fetch(`${apiUrl}/review`, {
@@ -40,10 +42,14 @@ def get_user(user_id):
         body: JSON.stringify({ code: codeSnippet, language })
       });
       const data = await response.json();
-      setScanResults(data);
+      if (data.error) {
+        setApiError(data.error);
+      } else {
+        setScanResults(data);
+      }
     } catch (error) {
       console.error(error);
-      alert("Failed to reach API.");
+      setApiError("Failed to reach API. Make sure the backend is running.");
     } finally {
       setIsScanning(false);
     }
@@ -300,7 +306,13 @@ def get_user(user_id):
                   {isScanning ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-on-surface-variant">
                       <span className="material-symbols-outlined text-5xl animate-spin text-primary">autorenew</span>
-                      <p className="font-headline">Claude 3.5 Sonnet is analyzing code...</p>
+                      <p className="font-headline">Claude is analyzing code...</p>
+                    </div>
+                  ) : apiError ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-4">
+                      <span className="material-symbols-outlined text-5xl text-error">error</span>
+                      <p className="font-headline font-bold text-error text-center">Backend Error</p>
+                      <p className="text-sm text-on-surface-variant text-center max-w-md bg-error/10 border border-error/20 rounded-lg p-4 font-mono break-words">{apiError}</p>
                     </div>
                   ) : !scanResults ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-on-surface-variant">

@@ -58,6 +58,8 @@ plugins:
 custom:
   serverless-offline:
     noPrependStageInUrl: true
+    pythonBin: python3
+    useChildProcesses: true
   pythonRequirements:
     dockerizePip: false
     pythonBin: python3

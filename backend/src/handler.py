@@ -43,17 +43,13 @@ def review_code(event, context):
             return {"statusCode": 401, "headers": {"Access-Control-Allow-Origin": "*"}, "body": json.dumps({"error": "Invalid GitHub webhook signature"})}
 
         # Load the body
-        print("I am at line 46")
         body_str = event.get('body', '{}')
         if not body_str:
             body_str = '{}'
         body = json.loads(body_str) if isinstance(body_str, str) else body_str
-        print("this is the body", body)
         # Determine language context from dashboard toggle or fallback 
         language = body.get('language', 'python')
-        print("this is the language", language)
         is_webhook = 'pull_request' in body
-        print("this is the webhook", is_webhook)
         
         # 1. Check if it's a GitHub Webhook event
         if 'pull_request' in body:
@@ -109,19 +105,16 @@ def review_code(event, context):
         })
 
         bedrock_response = bedrock.invoke_model(
-            modelId='us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+            modelId='us.anthropic.claude-sonnet-4-5-20250929-v1:0',
             contentType='application/json',
             accept='application/json',
             body=request_body
         )
-        print("this is the bedrock response", bedrock_response)
         response_body = json.loads(bedrock_response['body'].read())
         content = response_body.get('content', [])[0].get('text', '{}')
-        print("this is the content", content)
         # Parse Claude's JSON response
         try:
             analysis_result = json.loads(content)
-            print("this is the analysis result", analysis_result)
         except json.JSONDecodeError:
             # Maybe the text has markdown block ```json ... ```
             clean_text = content.replace("```json", "").replace("```", "").strip()
