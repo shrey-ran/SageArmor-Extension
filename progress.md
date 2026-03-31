@@ -62,6 +62,6 @@
 ---
 
 ## 🚀 Phase 10: Deployment
-- [ ] Deploy serverless backend
-- [ ] Launch frontend
+- [x] Deploy serverless backend (Live at ryzqlua1z8.execute-api.us-east-1.amazonaws.com)
+- [ ] Launch frontend (Pending Vercel deploy)
 - [ ] Demo ready

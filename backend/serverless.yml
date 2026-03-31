@@ -13,24 +13,23 @@ provider:
     GITHUB_WEBHOOK_SECRET: ${env:GITHUB_WEBHOOK_SECRET, ''}
     GITHUB_TOKEN: ${env:GITHUB_TOKEN, ''}
 
-  # ── API Gateway rate limiting ─────────────────────────────
-  # 1 request/second steady-state, burst of 2 — prevents runaway billing
-  apiGateway:
-    throttling:
-      maxRequestsPerSecond: 1
-      maxConcurrentRequests: 2
-
   iamRoleStatements:
     - Effect: Allow
       Action:
         - bedrock:InvokeModel
       Resource: "arn:aws:bedrock:${self:provider.region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "arn:aws:logs:*:*:*"
+
 
 functions:
   reviewCode:
     handler: src/handler.review_code
-    # ── Max 1 Lambda running at any time — hard concurrency cap ──
-    reservedConcurrency: 1
+    # Note: new AWS accounts have 10 concurrent executions total — that IS the rate limit
     events:
       - http:
           path: /review
