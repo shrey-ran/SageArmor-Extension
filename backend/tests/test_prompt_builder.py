@@ -11,9 +11,9 @@ import sys
 import os
 
 # Ensure the src directory is on the path so we can import without installing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from prompt_builder import build_security_prompt
+from src.prompt_builder import build_security_prompt
 
 
 class TestBuildSecurityPrompt:

@@ -14,7 +14,7 @@ import json
 import unittest
 from unittest.mock import patch, MagicMock
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 
 def _make_event(body: dict, headers: dict = None) -> dict:
@@ -32,7 +32,7 @@ class TestReviewCodeInputValidation(unittest.TestCase):
         mock_bedrock = MagicMock()
         with patch('boto3.client', return_value=mock_bedrock):
             import importlib
-            import handler
+            from src import handler
             importlib.reload(handler)
             return handler, mock_bedrock
 
@@ -80,7 +80,7 @@ class TestReviewCodeSignatureValidation(unittest.TestCase):
         mock_bedrock = MagicMock()
         with patch('boto3.client', return_value=mock_bedrock):
             import importlib
-            import handler
+            from src import handler
             importlib.reload(handler)
 
         body_str = json.dumps({"code": "x = 1", "language": "python"})

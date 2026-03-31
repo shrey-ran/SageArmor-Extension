@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import { log } from 'console';
 
 function App() {
   const [codeSnippet, setCodeSnippet] = useState(`import os
@@ -249,13 +250,13 @@ def get_user(user_id):
 
             {/* Right Column: Active Pull Request Review */}
             <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-              
+
               {/* Code Input Area */}
               <div className="bg-surface-container rounded-xl border border-outline-variant/15 p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-headline font-bold text-on-surface">Snippet Scanner</h2>
-                  <select 
-                    value={language} 
+                  <select
+                    value={language}
                     onChange={(e) => setLanguage(e.target.value)}
                     className="bg-surface-container-high text-on-surface text-sm font-label uppercase tracking-wider rounded-lg px-3 py-1.5 border border-outline-variant/15 outline-none focus:border-primary/50 transition-colors"
                   >
@@ -266,7 +267,7 @@ def get_user(user_id):
                     <option value="yaml">YAML (K8s / CI)</option>
                   </select>
                 </div>
-                <textarea 
+                <textarea
                   value={codeSnippet}
                   onChange={(e) => setCodeSnippet(e.target.value)}
                   className="w-full h-48 bg-surface-container-lowest text-on-surface p-4 rounded-lg font-mono text-sm border border-outline-variant/20 focus:outline-none focus:border-primary/50 transition-colors"
@@ -304,7 +305,7 @@ def get_user(user_id):
                   ) : !scanResults ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-on-surface-variant">
                       <span className="material-symbols-outlined text-5xl opacity-50">data_object</span>
-                      <p className="font-headline text-center">Paste a snippet above and click New Scan<br/>to automatically detect vulnerabilities.</p>
+                      <p className="font-headline text-center">Paste a snippet above and click New Scan<br />to automatically detect vulnerabilities.</p>
                     </div>
                   ) : scanResults.vulnerabilities && scanResults.vulnerabilities.length > 0 ? (
                     scanResults.vulnerabilities.map((v: any, idx: number) => (
@@ -346,9 +347,9 @@ def get_user(user_id):
                               className="absolute top-3 right-3 flex items-center gap-1 text-xs font-label px-2 py-1 rounded-md bg-surface-container-high border border-outline-variant/20 hover:border-primary/40 transition-all"
                             >
                               {copiedIdx === idx ? (
-                                <><span className="material-symbols-outlined text-sm text-primary" style={{fontSize:'14px'}}>check_circle</span><span className="text-primary">Copied!</span></>
+                                <><span className="material-symbols-outlined text-sm text-primary" style={{ fontSize: '14px' }}>check_circle</span><span className="text-primary">Copied!</span></>
                               ) : (
-                                <><span className="material-symbols-outlined text-sm text-on-surface-variant" style={{fontSize:'14px'}}>content_copy</span><span className="text-on-surface-variant">Copy</span></>
+                                <><span className="material-symbols-outlined text-sm text-on-surface-variant" style={{ fontSize: '14px' }}>content_copy</span><span className="text-on-surface-variant">Copy</span></>
                               )}
                             </button>
                             <div className="overflow-x-auto p-4 pr-20">
@@ -364,7 +365,7 @@ def get_user(user_id):
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-primary">
                       <span className="material-symbols-outlined text-5xl">verified</span>
-                      <p className="font-headline font-bold text-center">No vulnerabilities detected!<br/><span className="text-on-surface-variant font-normal text-sm">Code passed AI security review.</span></p>
+                      <p className="font-headline font-bold text-center">No vulnerabilities detected!<br /><span className="text-on-surface-variant font-normal text-sm">Code passed AI security review.</span></p>
                     </div>
                   )}
                 </div>

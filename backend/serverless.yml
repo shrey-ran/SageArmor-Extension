@@ -17,7 +17,9 @@ provider:
     - Effect: Allow
       Action:
         - bedrock:InvokeModel
-      Resource: "arn:aws:bedrock:${self:provider.region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      Resource: 
+        - "arn:aws:bedrock:*::foundation-model/*"
+        - "arn:aws:bedrock:*:*:inference-profile/*"
     - Effect: Allow
       Action:
         - logs:CreateLogGroup

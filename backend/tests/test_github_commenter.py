@@ -11,9 +11,9 @@ import os
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from github_commenter import _build_review_body, post_pr_review
+from src.github_commenter import _build_review_body, post_pr_review
 
 
 SAMPLE_VULN_HIGH = {
@@ -89,7 +89,7 @@ class TestPostPrReview(unittest.TestCase):
         mock_response.status_code = 201
 
         with patch.dict(os.environ, {'GITHUB_TOKEN': 'fake-token'}):
-            with patch('github_commenter.requests.post', return_value=mock_response):
+            with patch('src.github_commenter.requests.post', return_value=mock_response):
                 result = post_pr_review("owner/repo", 1, [SAMPLE_VULN_HIGH])
         self.assertTrue(result)
 
@@ -100,6 +100,6 @@ class TestPostPrReview(unittest.TestCase):
         mock_response.text = "Unauthorized"
 
         with patch.dict(os.environ, {'GITHUB_TOKEN': 'bad-token'}):
-            with patch('github_commenter.requests.post', return_value=mock_response):
+            with patch('src.github_commenter.requests.post', return_value=mock_response):
                 result = post_pr_review("owner/repo", 1, [])
         self.assertFalse(result)
