@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: python3.9
+  runtime: python3.11
   region: ${env:AWS_REGION, 'us-east-1'}
   timeout: 30
   memorySize: 512
@@ -12,6 +12,14 @@ provider:
     AWS_ACCOUNT_ID: !Ref AWS::AccountId
     GITHUB_WEBHOOK_SECRET: ${env:GITHUB_WEBHOOK_SECRET, ''}
     GITHUB_TOKEN: ${env:GITHUB_TOKEN, ''}
+
+  # ── API Gateway rate limiting ─────────────────────────────
+  # 1 request/second steady-state, burst of 2 — prevents runaway billing
+  apiGateway:
+    throttling:
+      maxRequestsPerSecond: 1
+      maxConcurrentRequests: 2
+
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -21,6 +29,8 @@ provider:
 functions:
   reviewCode:
     handler: src/handler.review_code
+    # ── Max 1 Lambda running at any time — hard concurrency cap ──
+    reservedConcurrency: 1
     events:
       - http:
           path: /review
@@ -48,9 +58,11 @@ custom:
   serverless-offline:
     noPrependStageInUrl: true
   pythonRequirements:
-    dockerizePip: non-linux
+    dockerizePip: false
+    pythonBin: python3
     slim: true
     strip: false
     noDeploy:
       - pytest
       - pytest-mock
+
