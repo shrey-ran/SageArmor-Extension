@@ -5,12 +5,18 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: python3.9
-  region: us-east-1
+  region: ${env:AWS_REGION, 'us-east-1'}
+  timeout: 30
+  memorySize: 512
+  environment:
+    AWS_ACCOUNT_ID: !Ref AWS::AccountId
+    GITHUB_WEBHOOK_SECRET: ${env:GITHUB_WEBHOOK_SECRET, ''}
+    GITHUB_TOKEN: ${env:GITHUB_TOKEN, ''}
   iamRoleStatements:
     - Effect: Allow
       Action:
         - bedrock:InvokeModel
-      Resource: "*"
+      Resource: "arn:aws:bedrock:${self:provider.region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
 
 functions:
   reviewCode:
@@ -20,6 +26,19 @@ functions:
           path: /review
           method: post
           cors: true
+      - http:
+          path: /webhook
+          method: post
+          cors: true
+
+package:
+  exclude:
+    - venv/**
+    - tests/**
+    - node_modules/**
+    - .env
+    - "**/__pycache__/**"
+    - "**/*.pyc"
 
 plugins:
   - serverless-python-requirements
@@ -30,3 +49,8 @@ custom:
     noPrependStageInUrl: true
   pythonRequirements:
     dockerizePip: non-linux
+    slim: true
+    strip: false
+    noDeploy:
+      - pytest
+      - pytest-mock
