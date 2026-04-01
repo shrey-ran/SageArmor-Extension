@@ -59,21 +59,33 @@ def _clone_repository(repo_url, target_dir, token=None, branch=None):
     if not _is_allowed_repo_url(repo_url):
         raise ValueError('Only https://github.com repositories are allowed')
 
-    cmd = ['git']
-    if token:
-        cmd += ['-c', f'http.extraheader=Authorization: Bearer {token}']
-
-    cmd += ['clone', '--depth', '1']
-    if branch:
-        cmd += ['--branch', branch, '--single-branch']
-    cmd += [repo_url, target_dir]
-
     env = os.environ.copy()
     env['GIT_TERMINAL_PROMPT'] = '0'
 
-    result = _run_cmd(cmd, env=env)
-    if result.returncode != 0:
-        raise RuntimeError(f'git clone failed: {result.stderr.strip() or result.stdout.strip()}')
+    def _build_clone_cmd(use_token):
+        cmd = ['git']
+        if use_token and token:
+            cmd += ['-c', f'http.extraheader=Authorization: Bearer {token}']
+        cmd += ['clone', '--depth', '1']
+        if branch:
+            cmd += ['--branch', branch, '--single-branch']
+        cmd += [repo_url, target_dir]
+        return cmd
+
+    result = _run_cmd(_build_clone_cmd(use_token=bool(token)), env=env)
+    if result.returncode == 0:
+        return
+
+    # If token-based auth failed (common with stale tokens on public repos),
+    # retry unauthenticated clone before surfacing an error.
+    err_text = (result.stderr or result.stdout or '').lower()
+    auth_failed = 'authentication failed' in err_text or 'invalid credentials' in err_text
+    if token and auth_failed:
+        result = _run_cmd(_build_clone_cmd(use_token=False), env=env)
+        if result.returncode == 0:
+            return
+
+    raise RuntimeError(f'git clone failed: {result.stderr.strip() or result.stdout.strip()}')
 
 
 def _is_text_candidate(file_name, size_bytes):
