@@ -6,7 +6,7 @@ Validates:
 - Returns 401 when GitHub webhook signature is invalid
 - Skips non-actionable webhook actions (e.g. 'closed')
 
-All AWS Bedrock and GitHub API calls are mocked — zero real network traffic.
+All model-provider and GitHub API calls are mocked — zero real network traffic.
 """
 import sys
 import os
@@ -73,14 +73,14 @@ class TestReviewCodeInputValidation(unittest.TestCase):
         self.assertIn("msg", body)
         self.assertIn("Skipping", body["msg"])
 
-    def test_review_uses_local_fallback_when_bedrock_unavailable(self):
+    def test_review_uses_local_fallback_when_model_unavailable(self):
         handler, _ = self._patched_import()
         event = _make_event({
             "code": "query = \"SELECT * FROM users WHERE id = \" + user_id",
             "language": "python",
         })
 
-        with patch.object(handler, '_invoke_bedrock_json', side_effect=Exception("Unable to locate credentials")):
+        with patch.object(handler, '_invoke_model_json', side_effect=Exception("Model unavailable")):
             response = handler.review_code(event, {})
 
         self.assertEqual(response["statusCode"], 200)
@@ -151,7 +151,7 @@ class TestAdvancedEndpoints(unittest.TestCase):
             "language": "python",
         })
 
-        with patch.object(handler, '_invoke_bedrock_json', side_effect=Exception("Unable to locate credentials")):
+        with patch.object(handler, '_invoke_model_json', side_effect=Exception("Model unavailable")):
             response = handler.attack_path(event, {})
 
         self.assertEqual(response["statusCode"], 200)
@@ -218,14 +218,14 @@ class TestAdvancedEndpoints(unittest.TestCase):
             ]
         })
 
-        with patch.object(handler, '_invoke_bedrock_text', return_value="Fix IAM wildcard policy first."):
+        with patch.object(handler, '_invoke_model_text', return_value="Fix IAM wildcard policy first."):
             response = handler.copilot_chat(event, {})
 
         self.assertEqual(response["statusCode"], 200)
         payload = json.loads(response["body"])
         self.assertIn("answer", payload)
 
-    def test_copilot_falls_back_when_bedrock_unavailable(self):
+    def test_copilot_falls_back_when_model_unavailable(self):
         handler = self._patched_import()
         event = _make_event({
             "question": "What should I fix first?",
@@ -233,7 +233,7 @@ class TestAdvancedEndpoints(unittest.TestCase):
             "language": "python",
         })
 
-        with patch.object(handler, '_invoke_bedrock_text', side_effect=Exception("AccessDeniedException")):
+        with patch.object(handler, '_invoke_model_text', side_effect=Exception("ModelUnavailable")):
             response = handler.copilot_chat(event, {})
 
         self.assertEqual(response["statusCode"], 200)
@@ -276,7 +276,7 @@ class TestAdvancedEndpoints(unittest.TestCase):
             ],
         }
 
-        with patch.object(handler, 'selective_repo_scan', return_value=fake_scan), patch.object(handler, '_invoke_bedrock_json', side_effect=Exception('bedrock unavailable')):
+        with patch.object(handler, 'selective_repo_scan', return_value=fake_scan), patch.object(handler, '_invoke_model_json', side_effect=Exception('model unavailable')):
             response = handler.repo_scan(event, {})
 
         self.assertEqual(response["statusCode"], 200)

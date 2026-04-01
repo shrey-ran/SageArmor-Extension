@@ -115,8 +115,23 @@ def calculate_priority_score(severity: str, exploitability: str, asset_value: st
 
 
 def build_risk_ranking(vulnerabilities: List[Dict[str, Any]], context_text: str = "") -> List[Dict[str, Any]]:
+    grouped: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    for vuln in vulnerabilities:
+        issue = str(vuln.get("issue", "Unknown issue"))
+        severity = str(vuln.get("severity", "Low"))
+        key = (_to_lower(issue), _to_lower(severity))
+        if key not in grouped:
+            grouped[key] = {
+                "issue": issue,
+                "severity": severity,
+                "sample": vuln,
+                "occurrence_count": 0,
+            }
+        grouped[key]["occurrence_count"] += 1
+
     ranked = []
-    for idx, vuln in enumerate(vulnerabilities):
+    for idx, grouped_item in enumerate(grouped.values()):
+        vuln = grouped_item["sample"]
         exploitability = classify_exploitability(vuln, context_text)
         asset_value = _infer_asset_value(
             " ".join([str(vuln.get("issue", "")), str(vuln.get("explanation", "")), context_text])
@@ -130,11 +145,12 @@ def build_risk_ranking(vulnerabilities: List[Dict[str, Any]], context_text: str 
         ranked.append(
             {
                 "id": f"risk-{idx + 1}",
-                "issue": vuln.get("issue", "Unknown issue"),
-                "severity": vuln.get("severity", "Low"),
+                "issue": grouped_item["issue"],
+                "severity": grouped_item["severity"],
                 "exploitability": exploitability,
                 "asset_value": asset_value.capitalize(),
                 "priority_score": priority_score,
+                "occurrence_count": grouped_item["occurrence_count"],
             }
         )
 
@@ -248,8 +264,16 @@ def simulate_breach(risk_ranking: List[Dict[str, Any]], attack_graph: Dict[str, 
         exposed.update(["Session metadata"])
         likely_impact.append("Limited compromise with constrained blast radius")
 
-    path_steps = attack_graph.get("attack_paths", [{}])[0].get("steps", [])
-    narrative = " -> ".join([step.get("from", "") for step in path_steps] + ([path_steps[-1].get("to", "")] if path_steps else []))
+    # Keep impact statements unique while preserving order.
+    likely_impact = list(dict.fromkeys(likely_impact))
+
+    attack_paths = attack_graph.get("attack_paths", [])
+    first_path = attack_paths[0] if attack_paths else {}
+    path_steps = first_path.get("steps", []) if isinstance(first_path, dict) else []
+    narrative = " -> ".join(
+        [step.get("from", "") for step in path_steps]
+        + ([path_steps[-1].get("to", "")] if path_steps else [])
+    )
 
     return {
         "chain_summary": narrative or "No viable multi-step chain found",

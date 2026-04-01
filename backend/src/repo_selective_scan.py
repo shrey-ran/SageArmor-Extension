@@ -134,7 +134,7 @@ def build_repo_map(repo_root, max_files=12000):
     }
 
 
-def extract_keywords(text, max_keywords=14):
+def extract_keywords(text, max_keywords=14, include_security_defaults=True):
     raw_tokens = re.findall(r'[A-Za-z_][A-Za-z0-9_\-]{2,}', text or '')
 
     seen = set()
@@ -150,9 +150,10 @@ def extract_keywords(text, max_keywords=14):
         seen.add(token_l)
         keywords.append(token_l)
 
-    for sec_kw in SECURITY_KEYWORDS:
-        if sec_kw not in seen:
-            keywords.append(sec_kw)
+    if include_security_defaults:
+        for sec_kw in SECURITY_KEYWORDS:
+            if sec_kw not in seen:
+                keywords.append(sec_kw)
 
     return keywords[:max_keywords]
 
@@ -243,13 +244,19 @@ def selective_repo_scan(repo_url, query, token=None, branch=None, top_k=3):
         repo_files = repo_map['files']
         repo_file_set = {item['path'] for item in repo_files}
 
-        keywords = extract_keywords(query)
+        query_keywords = extract_keywords(query, include_security_defaults=False)
+        if query_keywords:
+            keywords = query_keywords
+        else:
+            # Empty/weak query gets baseline security keywords.
+            keywords = extract_keywords('', include_security_defaults=True)
+
         matched_paths = _search_file_paths(repo_dir, keywords)
 
         if repo_file_set:
             matched_paths = [p for p in matched_paths if p in repo_file_set]
 
-        if not matched_paths:
+        if not matched_paths and not query_keywords:
             matched_paths = [item['path'] for item in repo_files[: min(80, len(repo_files))]]
 
         selected = _score_and_select(repo_dir, matched_paths, keywords, top_k=top_k)

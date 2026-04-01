@@ -69,6 +69,20 @@ def test_simulate_breach_returns_data_points():
     assert len(simulation["accessible_data"]) >= 1
 
 
+def test_simulate_breach_handles_empty_attack_paths():
+    ranking = [
+        {
+            "issue": "Potential SQL Injection",
+            "severity": "High",
+            "priority_score": 8.9,
+            "exploitability": {"exploitable": True},
+        }
+    ]
+    simulation = simulate_breach(ranking, {"attack_paths": []})
+    assert simulation["chain_summary"] == "No viable multi-step chain found"
+    assert isinstance(simulation["accessible_data"], list)
+
+
 def test_build_attack_intelligence_shape():
     vulns = [
         {

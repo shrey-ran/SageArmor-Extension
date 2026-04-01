@@ -43,6 +43,7 @@ type RiskItem = {
   issue: string;
   severity: string;
   priority_score: number;
+  occurrence_count?: number;
   asset_value: string;
   exploitability: {
     level: string;
@@ -214,7 +215,9 @@ def get_user(user_id):
   const highCount = scanResults?.vulnerabilities?.filter((v: Vulnerability) => v.severity === 'High').length || 0;
   const mediumCount = scanResults?.vulnerabilities?.filter((v: Vulnerability) => v.severity === 'Medium').length || 0;
   const lowCount = scanResults?.vulnerabilities?.filter((v: Vulnerability) => v.severity === 'Low').length || 0;
-  const score = scanResults ? Math.max(0, 100 - (highCount * 30 + mediumCount * 10 + lowCount * 2)) : 100;
+  // Count-sensitive score: multiple high issues should materially reduce score.
+  const severityPenalty = highCount * 12 + mediumCount * 7 + lowCount * 3;
+  const score = Math.max(0, 100 - severityPenalty);
   const scoreTone = score >= 85 ? 'text-primary' : score >= 60 ? 'text-tertiary' : 'text-error';
 
   const jumpTo = (id: string) => {
@@ -377,7 +380,14 @@ def get_user(user_id):
                   {riskRanking.slice(0, 3).map((item) => (
                     <div key={item.id} className="p-4 rounded-lg border border-outline-variant/20 bg-surface-container-high">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-bold font-headline text-on-surface">{item.issue}</p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-sm font-bold font-headline text-on-surface truncate">{item.issue}</p>
+                          {(item.occurrence_count || 0) > 1 ? (
+                            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-on-surface/10 text-on-surface-variant border border-outline-variant/30">
+                              x{item.occurrence_count}
+                            </span>
+                          ) : null}
+                        </div>
                         <span className="text-xs font-mono px-2 py-1 rounded bg-primary/15 text-primary border border-primary/25">{item.priority_score.toFixed(1)}/10</span>
                       </div>
                       <div className="mt-2 flex items-center gap-3 text-xs text-on-surface-variant">
@@ -620,9 +630,12 @@ def get_user(user_id):
                           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
                             {v.severity === 'High' ? 'dangerous' : v.severity === 'Medium' ? 'report_problem' : 'info'}
                           </span>
-                          <div>
+                          <div className="flex-1">
                             <p className="font-bold font-headline mb-1">{v.issue}</p>
                             <p className="text-sm text-on-surface-variant leading-relaxed">{v.explanation}</p>
+                            {(v as any).file_count && (v as any).file_count > 1 && (
+                              <p className="text-xs mt-2 font-semibold text-on-surface-variant/80">Found in {(v as any).file_count} files</p>
+                            )}
                           </div>
                         </div>
 

@@ -1,25 +1,213 @@
 import json
 import os
-import boto3
 import hmac
 import hashlib
 import re
 import requests
 from dotenv import load_dotenv
+import boto3
+
+try:
+    import google.generativeai as genai
+except Exception:
+    genai = None
 from .prompt_builder import build_security_prompt
 from .github_commenter import post_pr_review
 from .attack_intelligence import build_attack_intelligence, build_copilot_prompt
 from .repo_selective_scan import selective_repo_scan
+from .sast_scanner import SASTScanner
 
 load_dotenv()
 
-# Initialize Bedrock client
-# In Lambda, boto3 natively picks up credentials and region from the IAM role.
-# For local testing, it will pick up from the environment variables (.env).
-bedrock = boto3.client(
-    service_name='bedrock-runtime',
-    region_name=os.getenv('AWS_REGION', 'us-east-1')
-)
+def _is_truthy(value):
+    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _get_model_provider():
+    explicit = (os.getenv('MODEL_PROVIDER') or '').strip().lower()
+    has_gemini = bool(os.getenv('GEMINI_API_KEY'))
+    if explicit in {'gemini', 'bedrock'}:
+        return explicit
+    return 'gemini' if has_gemini else 'bedrock'
+
+
+def _gemini_model_candidates():
+    configured = (os.getenv('GEMINI_MODEL') or '').strip()
+    preferred = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+    ]
+
+    candidates = []
+    if configured:
+        candidates.append(configured)
+
+    for name in preferred:
+        if name not in candidates:
+            candidates.append(name)
+
+    return candidates
+
+
+def _extract_gemini_text(response):
+    try:
+        text = (getattr(response, 'text', '') or '').strip()
+        if text:
+            return text
+    except Exception:
+        pass
+
+    chunks = []
+    candidates = getattr(response, 'candidates', None) or []
+    for candidate in candidates:
+        content = getattr(candidate, 'content', None)
+        parts = getattr(content, 'parts', None) if content else None
+        if not parts:
+            continue
+        for part in parts:
+            t = getattr(part, 'text', None)
+            if t:
+                chunks.append(t)
+
+    return '\n'.join(chunks).strip()
+
+
+def _parse_json_from_text(text):
+    if not text:
+        raise json.JSONDecodeError('Empty text', '', 0)
+
+    candidates = [text, text.replace('```json', '').replace('```', '').strip()]
+
+    # Try extracting the outermost JSON object/array block.
+    first_obj = text.find('{')
+    last_obj = text.rfind('}')
+    if first_obj != -1 and last_obj != -1 and last_obj > first_obj:
+        candidates.append(text[first_obj:last_obj + 1])
+
+    first_arr = text.find('[')
+    last_arr = text.rfind(']')
+    if first_arr != -1 and last_arr != -1 and last_arr > first_arr:
+        candidates.append(text[first_arr:last_arr + 1])
+
+    last_err = None
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            last_err = exc
+
+    raise last_err if last_err else json.JSONDecodeError('Invalid JSON', text, 0)
+
+
+def _repair_json_with_gemini(raw_text, max_tokens):
+    repair_prompt = (
+        'Return only valid JSON. Preserve original meaning and fields. '
+        'Do not add markdown fences.\n\n'
+        f'{raw_text}'
+    )
+
+    last_error = None
+    for model_name in _gemini_model_candidates():
+        try:
+            model = genai.GenerativeModel(model_name=model_name)
+            response = model.generate_content(
+                repair_prompt,
+                generation_config={
+                    'max_output_tokens': max_tokens,
+                    'response_mime_type': 'application/json',
+                    'temperature': 0,
+                },
+            )
+            repaired = _extract_gemini_text(response)
+            return _parse_json_from_text(repaired)
+        except Exception as exc:
+            last_error = exc
+
+    raise RuntimeError(str(last_error) if last_error else 'Gemini JSON repair failed')
+
+
+def _get_bedrock_client():
+    # In Lambda, boto3 picks credentials/region from IAM role.
+    # For local, it picks from environment variables.
+    return boto3.client(
+        service_name='bedrock-runtime',
+        region_name=os.getenv('AWS_REGION', 'us-east-1')
+    )
+
+
+def _invoke_gemini_json(prompt, max_tokens=600):
+    if genai is None:
+        raise RuntimeError('google-generativeai dependency is not installed')
+
+    api_key = os.getenv('GEMINI_API_KEY', '').strip()
+    if not api_key:
+        raise RuntimeError('GEMINI_API_KEY is missing')
+
+    genai.configure(api_key=api_key)
+
+    response = None
+    last_error = None
+    for model_name in _gemini_model_candidates():
+        try:
+            model = genai.GenerativeModel(model_name=model_name)
+            response = model.generate_content(
+                prompt,
+                generation_config={
+                    'max_output_tokens': max_tokens,
+                    'response_mime_type': 'application/json',
+                    'temperature': 0.2,
+                },
+            )
+            break
+        except Exception as exc:
+            last_error = exc
+
+    if response is None:
+        raise RuntimeError(str(last_error) if last_error else 'Gemini model invocation failed')
+
+    text = _extract_gemini_text(response)
+    if not text:
+        raise RuntimeError('Gemini returned empty response')
+
+    try:
+        return _parse_json_from_text(text)
+    except json.JSONDecodeError:
+        return _repair_json_with_gemini(text, max_tokens=max_tokens)
+
+
+def _invoke_gemini_text(prompt, max_tokens=350):
+    if genai is None:
+        raise RuntimeError('google-generativeai dependency is not installed')
+
+    api_key = os.getenv('GEMINI_API_KEY', '').strip()
+    if not api_key:
+        raise RuntimeError('GEMINI_API_KEY is missing')
+
+    genai.configure(api_key=api_key)
+
+    response = None
+    last_error = None
+    for model_name in _gemini_model_candidates():
+        try:
+            model = genai.GenerativeModel(model_name=model_name)
+            response = model.generate_content(
+                prompt,
+                generation_config={
+                    'max_output_tokens': max_tokens,
+                    'temperature': 0.3,
+                },
+            )
+            break
+        except Exception as exc:
+            last_error = exc
+
+    if response is None:
+        raise RuntimeError(str(last_error) if last_error else 'Gemini model invocation failed')
+    text = _extract_gemini_text(response)
+    if not text:
+        raise RuntimeError('Gemini returned empty response')
+    return text
 
 
 def _json_response(status_code, payload):
@@ -52,6 +240,7 @@ def _invoke_bedrock_json(prompt, max_tokens=600):
         ]
     })
 
+    bedrock = _get_bedrock_client()
     bedrock_response = bedrock.invoke_model(
         modelId='us.anthropic.claude-sonnet-4-5-20250929-v1:0',
         contentType='application/json',
@@ -59,7 +248,9 @@ def _invoke_bedrock_json(prompt, max_tokens=600):
         body=request_body
     )
     response_body = json.loads(bedrock_response['body'].read())
-    content = response_body.get('content', [])[0].get('text', '{}')
+    content_items = response_body.get('content') or []
+    first_item = content_items[0] if isinstance(content_items, list) and content_items else {}
+    content = first_item.get('text', '{}') if isinstance(first_item, dict) else '{}'
 
     try:
         return json.loads(content)
@@ -80,6 +271,7 @@ def _invoke_bedrock_text(prompt, max_tokens=350):
         ]
     })
 
+    bedrock = _get_bedrock_client()
     bedrock_response = bedrock.invoke_model(
         modelId='us.anthropic.claude-sonnet-4-5-20250929-v1:0',
         contentType='application/json',
@@ -87,86 +279,54 @@ def _invoke_bedrock_text(prompt, max_tokens=350):
         body=request_body
     )
     response_body = json.loads(bedrock_response['body'].read())
-    return response_body.get('content', [])[0].get('text', '').strip()
+    content_items = response_body.get('content') or []
+    first_item = content_items[0] if isinstance(content_items, list) and content_items else {}
+    text = first_item.get('text', '') if isinstance(first_item, dict) else ''
+    return text.strip()
+
+
+def _invoke_model_json(prompt, max_tokens=600):
+    provider = _get_model_provider()
+    if provider == 'gemini':
+        return _invoke_gemini_json(prompt, max_tokens=max_tokens)
+    return _invoke_bedrock_json(prompt, max_tokens=max_tokens)
+
+
+def _invoke_model_text(prompt, max_tokens=350):
+    provider = _get_model_provider()
+    if provider == 'gemini':
+        return _invoke_gemini_text(prompt, max_tokens=max_tokens)
+    return _invoke_bedrock_text(prompt, max_tokens=max_tokens)
 
 
 def _local_static_review(code_snippet):
+    """Use real SAST scanner instead of mock findings."""
     text = code_snippet or ''
-    text_lower = text.lower()
-    findings = []
-
-    if (
-        'select ' in text_lower
-        and ('+ user_id' in text_lower or '+ input(' in text_lower or 'f"select' in text_lower)
-    ):
-        findings.append({
-            'severity': 'High',
-            'issue': 'Potential SQL Injection',
-            'attack_vector': 'External input is concatenated into SQL query and executed directly.',
-            'explanation': 'The query appears to be dynamically built from user-controlled input.',
-            'poc_exploit_scenario': "Attacker supplies user_id as 1 OR 1=1 to bypass intended filtering.",
-            'remediation': {
-                'patch': (
-                    'query = "SELECT * FROM users WHERE id = ?"\n'
-                    'cursor.execute(query, (user_id,))'
-                ),
-                'explanation': 'Use parameterized queries to prevent input from altering SQL structure.',
-            },
-            'suggested_fix': 'Use prepared statements/parameterized queries for all DB operations.',
+    
+    # Use real SAST scanner to detect actual vulnerabilities
+    sast_findings = SASTScanner.scan_code(text, file_path='<input>')
+    
+    # Convert SAST findings to the expected response format
+    vulnerabilities = []
+    for finding in sast_findings:
+        vulnerabilities.append({
+            'severity': finding['severity'],
+            'issue': finding['issue'],
+            'attack_vector': finding['attack_vector'],
+            'explanation': finding['explanation'],
+            'poc_exploit_scenario': finding['poc_exploit_scenario'],
+            'remediation': finding['remediation'],
+            'suggested_fix': finding['suggested_fix'],
+            'matched_code': finding.get('matched_code', ''),
+            'line': finding.get('line', 0),
         })
-
-    if any(secret_word in text_lower for secret_word in ['api_key', 'secret', 'password =', 'token =']):
-        findings.append({
-            'severity': 'Medium',
-            'issue': 'Possible Hardcoded Secret',
-            'attack_vector': 'Credential-like value is embedded in source and may leak via repo or logs.',
-            'explanation': 'Hardcoded secrets can be extracted and reused by attackers.',
-            'poc_exploit_scenario': 'Attacker gains repository read access and reuses exposed credentials.',
-            'remediation': {
-                'patch': (
-                    'import os\n'
-                    'api_key = os.getenv("API_KEY")\n'
-                    'if not api_key:\n'
-                    '    raise RuntimeError("Missing API_KEY")'
-                ),
-                'explanation': 'Move secrets to environment variables or a secret manager.',
-            },
-            'suggested_fix': 'Remove secrets from code and rotate any exposed keys immediately.',
-        })
-
-    if re.search(r'cors\s*=\s*\*|access-control-allow-origin["\']?\s*[:=]\s*["\']\*', text_lower):
-        findings.append({
-            'severity': 'Low',
-            'issue': 'Overly Permissive CORS',
-            'attack_vector': 'Any origin can call sensitive endpoints from a browser context.',
-            'explanation': 'Wildcard origin increases abuse potential for authenticated users.',
-            'poc_exploit_scenario': 'Malicious site triggers browser requests to internal API endpoints.',
-            'remediation': {
-                'patch': 'Access-Control-Allow-Origin: https://your-trusted-app.example',
-                'explanation': 'Restrict origins to trusted domains and review credentialed requests.',
-            },
-            'suggested_fix': 'Use explicit origin allowlists instead of wildcard CORS.',
-        })
-
-    if not findings:
-        findings.append({
-            'severity': 'Low',
-            'issue': 'No high-confidence issue from local fallback scan',
-            'attack_vector': 'No direct attack vector identified by offline rule-based analyzer.',
-            'explanation': 'The local fallback scanner uses limited heuristics. Use Bedrock-enabled mode for deeper analysis.',
-            'poc_exploit_scenario': 'No actionable exploit path detected in heuristic pass.',
-            'remediation': {
-                'patch': '# No patch generated by local fallback scanner',
-                'explanation': 'Run cloud model analysis for richer vulnerability detection.',
-            },
-            'suggested_fix': 'Enable Bedrock credentials for full model-powered review.',
-        })
-
+    
     return {
-        'vulnerabilities': findings,
-        'analysis_mode': 'local-fallback',
-        'note': 'Model-powered analysis unavailable; returned offline heuristic review.',
+        'vulnerabilities': vulnerabilities,
+        'analysis_mode': 'sast-local',
+        'note': 'Real static analysis performed; pattern-based vulnerability detection.',
     }
+
 
 
 def _local_copilot_answer(question, intelligence, vulnerabilities=None):
@@ -234,7 +394,7 @@ def _extract_vulnerabilities_for_advanced(body):
 
     prompt = build_security_prompt(code_snippet, language)
     try:
-        analysis_result = _invoke_bedrock_json(prompt)
+        analysis_result = _invoke_model_json(prompt)
     except Exception as err:
         print(f"[handler] Advanced endpoints using local fallback: {str(err)}")
         analysis_result = _local_static_review(code_snippet)
@@ -308,12 +468,12 @@ def review_code(event, context):
         if not code_snippet:
             return {"statusCode": 400, "headers": {"Access-Control-Allow-Origin": "*"}, "body": json.dumps({"error": "No code snippet provided."})}
 
-        # Call Claude 3.5 Sonnet via Bedrock using modularized prompt builder
+        # Call configured model provider (Gemini or Bedrock) using modularized prompt builder
         prompt = build_security_prompt(code_snippet, language)
 
         # Parse Claude's JSON response
         try:
-            analysis_result = _invoke_bedrock_json(prompt)
+            analysis_result = _invoke_model_json(prompt)
         except Exception as parse_err:
             print(f"[handler] Falling back to local static review: {str(parse_err)}")
             analysis_result = _local_static_review(code_snippet)
@@ -408,7 +568,7 @@ def copilot_chat(event, context):
 
         prompt = build_copilot_prompt(question, intelligence)
         try:
-            answer = _invoke_bedrock_text(prompt)
+            answer = _invoke_model_text(prompt)
             mode = "model"
             note = None
         except Exception as err:
@@ -472,7 +632,7 @@ def repo_scan(event, context):
 
         prompt = build_security_prompt(combined_context, 'python')
         try:
-            analysis_result = _invoke_bedrock_json(prompt)
+            analysis_result = _invoke_model_json(prompt)
         except Exception as err:
             print(f"[handler] Repo scan using local fallback: {str(err)}")
             analysis_result = _local_static_review(combined_context)

@@ -10,6 +10,9 @@ provider:
   memorySize: 512
   environment:
     AWS_ACCOUNT_ID: !Ref AWS::AccountId
+    MODEL_PROVIDER: ${env:MODEL_PROVIDER, 'gemini'}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY, ''}
+    GEMINI_MODEL: ${env:GEMINI_MODEL, 'gemini-2.5-flash'}
     GITHUB_WEBHOOK_SECRET: ${env:GITHUB_WEBHOOK_SECRET, ''}
     GITHUB_TOKEN: ${env:GITHUB_TOKEN, ''}
 
