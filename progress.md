@@ -65,3 +65,14 @@
 - [x] Deploy serverless backend (Live at ryzqlua1z8.execute-api.us-east-1.amazonaws.com)
 - [ ] Launch frontend (Pending Vercel deploy)
 - [ ] Demo ready
+
+---
+
+## 🔥 Phase 11: Advanced Attack Intelligence Module
+- [x] Attack path generation endpoint (`/attack-path`) and graph model
+- [x] Exploitability analysis + dynamic risk prioritization (`/risk-score`)
+- [x] Breach simulation endpoint (`/simulate`) with exposed-data summary
+- [x] AI Security Copilot endpoint (`/copilot`) with prompt-injection hardening
+- [x] Frontend advanced tabs: Attack View, Risk Panel, Breach Simulation, AI Copilot
+- [x] Frontend graph visualization integrated via React Flow
+- [x] Backend test coverage expanded (36 tests passing)

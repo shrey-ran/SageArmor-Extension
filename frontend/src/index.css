@@ -65,3 +65,39 @@
     font-family: var(--font-body);
   }
 }
+
+.react-flow__edge-textbg {
+  fill: #171a1f;
+  opacity: 0.95;
+}
+
+.react-flow__edge-text {
+  fill: #f6f6fc;
+  font-weight: 600;
+}
+
+.react-flow__controls {
+  box-shadow: none;
+  border: 1px solid #46484d;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: #171a1f;
+  border-bottom: 1px solid #46484d;
+}
+
+.react-flow__controls-button svg {
+  fill: #f6f6fc;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.react-flow__minimap {
+  background: #111318;
+  border: 1px solid #46484d;
+  border-radius: 10px;
+}
