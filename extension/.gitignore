@@ -1,8 +1,0 @@
-out
-node_modules
-*.vsix
-.DS_Store
-.env
-.vscode-test/
-.build/
-dist/
