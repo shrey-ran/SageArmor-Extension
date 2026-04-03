@@ -1,0 +1,39 @@
+{
+  "reference_standards": [
+    "CIS AWS Foundations Benchmark v3.0.0",
+    "NIST SP 800-53",
+    "OWASP Top 10"
+  ],
+  "guidelines": [
+    {
+      "category": "IAM (Identity & Access Management)",
+      "rule": "Principle of Least Privilege",
+      "description": "Never allow wildcard ('*') resource actions or principals unless absolutely necessary. Policies should be scoped down to the minimum required permissions.",
+      "severity": "High"
+    },
+    {
+      "category": "Storage (S3)",
+      "rule": "Secure Defaults",
+      "description": "S3 buckets must block public access unconditionally by default. Server-side encryption (SSE-S3 or SSE-KMS) must be enabled.",
+      "severity": "High"
+    },
+    {
+      "category": "Code Security",
+      "rule": "Hardcoded Secrets",
+      "description": "Never commit AWS keys, DB passwords, API tokens, or other sensitive credentials directly in source code or IaC configs. Use Secrets Manager or environment variables.",
+      "severity": "Critical"
+    },
+    {
+      "category": "Network Security",
+      "rule": "Restrictive Security Groups",
+      "description": "Avoid opening ports to '0.0.0.0/0' (the entire internet), especially for sensitive ports like 22 (SSH), 3389 (RDP), or database endpoints.",
+      "severity": "High"
+    },
+    {
+      "category": "Application Layer",
+      "rule": "Injection Prevention",
+      "description": "Ensure databases queries use parameterized binding instead of string concatenation to prevent SQL injection. Escape all inputs before executing shell commands.",
+      "severity": "High"
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+service: ai-security-agent
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: ${env:AWS_REGION, 'us-east-1'}
+  timeout: 30
+  memorySize: 512
+  environment:
+    AWS_ACCOUNT_ID: !Ref AWS::AccountId
+    MODEL_PROVIDER: ${env:MODEL_PROVIDER, 'gemini'}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY, ''}
+    GEMINI_MODEL: ${env:GEMINI_MODEL, 'gemini-2.5-flash'}
+    GITHUB_WEBHOOK_SECRET: ${env:GITHUB_WEBHOOK_SECRET, ''}
+    GITHUB_TOKEN: ${env:GITHUB_TOKEN, ''}
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - bedrock:InvokeModel
+      Resource: 
+        - "arn:aws:bedrock:*::foundation-model/*"
+        - "arn:aws:bedrock:*:*:inference-profile/*"
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "arn:aws:logs:*:*:*"
+
+
+functions:
+  reviewCode:
+    handler: src/handler.review_code
+    # Note: new AWS accounts have 10 concurrent executions total — that IS the rate limit
+    events:
+      - http:
+          path: /review
+          method: post
+          cors: true
+      - http:
+          path: /webhook
+          method: post
+          cors: true
+
+  attackPath:
+    handler: src/handler.attack_path
+    events:
+      - http:
+          path: /attack-path
+          method: post
+          cors: true
+
+  riskScore:
+    handler: src/handler.risk_score
+    events:
+      - http:
+          path: /risk-score
+          method: post
+          cors: true
+
+  simulateBreach:
+    handler: src/handler.simulate
+    events:
+      - http:
+          path: /simulate
+          method: post
+          cors: true
+
+  securityCopilot:
+    handler: src/handler.copilot_chat
+    events:
+      - http:
+          path: /copilot
+          method: post
+          cors: true
+
+  repoScan:
+    handler: src/handler.repo_scan
+    events:
+      - http:
+          path: /repo-scan
+          method: post
+          cors: true
+
+package:
+  exclude:
+    - venv/**
+    - tests/**
+    - node_modules/**
+    - .env
+    - "**/__pycache__/**"
+    - "**/*.pyc"
+
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    noPrependStageInUrl: true
+    pythonBin: python3
+    useChildProcesses: true
+  pythonRequirements:
+    dockerizePip: false
+    pythonBin: python3
+    slim: true
+    strip: false
+    noDeploy:
+      - pytest
+      - pytest-mock
+
