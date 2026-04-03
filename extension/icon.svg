@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Shield background -->
+  <path d="M64 10L20 30V60C20 85 64 115 64 115C64 115 108 85 108 60V30L64 10Z" fill="#10b981" stroke="#059669" stroke-width="2"/>
+  
+  <!-- Shield outline -->
+  <path d="M64 10L20 30V60C20 85 64 115 64 115C64 115 108 85 108 60V30L64 10Z" stroke="#047857" stroke-width="2" fill="none"/>
+  
+  <!-- Checkmark inside shield -->
+  <g transform="translate(64, 65)">
+    <!-- Check mark -->
+    <path d="M -15 5 L -5 15 L 20 -10" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

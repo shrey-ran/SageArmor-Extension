@@ -23,6 +23,11 @@ def _is_truthy(value):
     return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
+def _prefer_local_for_direct_scans() -> bool:
+    """Optional override: use local scanning first for direct requests when explicitly enabled."""
+    return _is_truthy(os.getenv('SAGE_ARMOR_LOCAL_ONLY', 'false'))
+
+
 def _get_model_provider():
     explicit = (os.getenv('MODEL_PROVIDER') or '').strip().lower()
     has_gemini = bool(os.getenv('GEMINI_API_KEY'))
@@ -319,6 +324,9 @@ def _local_static_review(code_snippet):
             'suggested_fix': finding['suggested_fix'],
             'matched_code': finding.get('matched_code', ''),
             'line': finding.get('line', 0),
+            'column': finding.get('column', 1),
+            'end_line': finding.get('end_line', finding.get('line', 0)),
+            'end_column': finding.get('end_column', finding.get('column', 1)),
         })
     
     return {
@@ -326,6 +334,29 @@ def _local_static_review(code_snippet):
         'analysis_mode': 'sast-local',
         'note': 'Real static analysis performed; pattern-based vulnerability detection.',
     }
+
+
+def _merge_vulnerabilities(primary, secondary):
+    """Merge vulnerability lists and dedupe by issue/title while preserving richer primary entries."""
+    primary = primary if isinstance(primary, list) else []
+    secondary = secondary if isinstance(secondary, list) else []
+
+    merged = []
+    seen = set()
+
+    def _key(v):
+        issue = str(v.get('issue') or v.get('title') or '').strip().lower()
+        line = str(v.get('line') or '')
+        return f"{issue}::{line}"
+
+    for vuln in primary + secondary:
+        k = _key(vuln)
+        if not k or k in seen:
+            continue
+        seen.add(k)
+        merged.append(vuln)
+
+    return merged
 
 
 
@@ -468,15 +499,24 @@ def review_code(event, context):
         if not code_snippet:
             return {"statusCode": 400, "headers": {"Access-Control-Allow-Origin": "*"}, "body": json.dumps({"error": "No code snippet provided."})}
 
-        # Call configured model provider (Gemini or Bedrock) using modularized prompt builder
-        prompt = build_security_prompt(code_snippet, language)
+        # Model-first behavior for production; local mode is opt-in via SAGE_ARMOR_LOCAL_ONLY=true.
+        local_result = _local_static_review(code_snippet)
 
-        # Parse Claude's JSON response
-        try:
-            analysis_result = _invoke_model_json(prompt)
-        except Exception as parse_err:
-            print(f"[handler] Falling back to local static review: {str(parse_err)}")
-            analysis_result = _local_static_review(code_snippet)
+        if not is_webhook and _prefer_local_for_direct_scans():
+            analysis_result = local_result
+        else:
+            prompt = build_security_prompt(code_snippet, language)
+            try:
+                analysis_result = _invoke_model_json(prompt)
+                model_vulns = analysis_result.get('vulnerabilities', []) if isinstance(analysis_result, dict) else []
+                local_vulns = local_result.get('vulnerabilities', [])
+                merged = _merge_vulnerabilities(model_vulns, local_vulns)
+                if isinstance(analysis_result, dict):
+                    analysis_result['vulnerabilities'] = merged
+                    analysis_result['analysis_mode'] = f"{analysis_result.get('analysis_mode', 'model')}+sast-local"
+            except Exception as parse_err:
+                print(f"[handler] Falling back to local static review: {str(parse_err)}")
+                analysis_result = local_result
 
         # Fire-and-forget: post findings back to GitHub PR (webhook path only)
         if is_webhook and repo_full_name and pr_number:

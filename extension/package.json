@@ -1,0 +1,167 @@
+{
+  "name": "sage-armor-scanner",
+  "displayName": "Sage Armor Security Scanner",
+  "description": "Real-time security vulnerability scanning in VS Code powered by Gemini AI",
+  "version": "0.1.2",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Security",
+    "Linters"
+  ],
+  "keywords": [
+    "security",
+    "vulnerability",
+    "scanner",
+    "siem",
+    "gemini",
+    "code-analysis"
+  ],
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shrey-ran/Sage-Armor-hack.git"
+  },
+  "license": "MIT",
+  "author": "Sage Armor Team",
+  "publisher": "sage-armor",
+  "activationEvents": [
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescriptreact",
+    "onLanguage:java",
+    "onLanguage:go",
+    "onLanguage:cpp",
+    "onLanguage:c",
+    "onLanguage:csharp",
+    "onLanguage:ruby",
+    "onLanguage:php",
+    "onLanguage:swift",
+    "onLanguage:kotlin",
+    "onLanguage:rust",
+    "onLanguage:sql"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "sageArmor.scanFile",
+        "title": "Sage Armor: Scan Current File"
+      },
+      {
+        "command": "sageArmor.scanWorkspace",
+        "title": "Sage Armor: Scan Workspace"
+      },
+      {
+        "command": "sageArmor.openSettings",
+        "title": "Sage Armor: Settings"
+      },
+      {
+        "command": "sageArmor.openAdvancedSettings",
+        "title": "Sage Armor: Advanced Settings"
+      },
+      {
+        "command": "sageArmor.testConnection",
+        "title": "Sage Armor: Test Backend Connection"
+      },
+      {
+        "command": "sageArmor.rescanActiveFile",
+        "title": "Sage Armor: Rescan Active File"
+      },
+      {
+        "command": "sageArmor.previewFix",
+        "title": "Sage Armor: Preview Fix"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "sageArmorPanel",
+          "name": "Sage Armor",
+          "icon": "$(shield)",
+          "contextualTitle": "Security Scanner"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Sage Armor",
+      "properties": {
+        "sageArmor.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "Backend API URL"
+        },
+        "sageArmor.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan file automatically on save"
+        },
+        "sageArmor.scanOnKeystroke": {
+          "type": "boolean",
+          "default": false,
+          "description": "Scan file on every keystroke (aggressive)"
+        },
+        "sageArmor.severityFilter": {
+          "type": "array",
+          "default": [
+            "Critical",
+            "High",
+            "Medium"
+          ],
+          "description": "Show vulnerabilities of selected severity levels"
+        },
+        "sageArmor.supportedLanguages": {
+          "type": "array",
+          "default": [
+            "python",
+            "javascript",
+            "typescript",
+            "java",
+            "go",
+            "cpp",
+            "c",
+            "csharp",
+            "ruby",
+            "php",
+            "swift",
+            "kotlin",
+            "rust",
+            "sql"
+          ],
+          "description": "File types to scan"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --platform=node --format=cjs",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-testables": "esbuild ./src/testable.ts --bundle --outfile=out/testable.js --platform=node --format=cjs --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "compile": "npm run esbuild",
+    "compile:testables": "npm run esbuild-testables",
+    "watch": "npm run esbuild-watch",
+    "pretest": "npm run compile && npm run compile:testables",
+    "test": "node --test tests/**/*.test.cjs",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^18.18.0",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "esbuild": "^0.19.0",
+    "eslint": "^8.50.0",
+    "typescript": "^5.2.0",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}
